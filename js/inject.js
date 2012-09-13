@@ -277,7 +277,15 @@
 			if ( curHeartbeat ) {
 				clearTimeout( curHeartbeat );
 			}
-
+			
+			// parent has got a hard timeout. Issue hearbeat to that timeout.
+			if( !!window.parent && window.parent.TestSwarm && !!window.parent.TestSwarm.runnerHeartbeat ) {
+				log('inject.js: Calling window.parent.TestSwarm.runnerHeartbeat...');
+				window.parent.TestSwarm.runnerHeartbeat();
+			} else {
+				log('inject.js: window.parent.TestSwarm.runnerHeartbeat not found!');
+			}
+			
 			curHeartbeat = setTimeout(function () {
 				log('Heartbeat caused results submission...');
 				submit({ fail: -1, total: -1 });

@@ -119,15 +119,32 @@
 		}, getTests, runTests );
 	}
 
-	function cancelTest() {
+	function cancelTest() {		
+		$( 'iframe' ).remove();
+		cancelTimeout();
+	}
+	
+	function cancelTimeout() {
 		if ( testTimeout ) {
 			clearTimeout( testTimeout );
 			testTimeout = 0;
 		}
-
-		$( 'iframe' ).remove();
 	}
-
+	
+	window.TestSwarm = window.TestSwarm || { };
+	function setTestTimeout( runInfo ) {
+		window.TestSwarm.runnerRunInfo = runInfo;	// store the parameter so we have it for runnerHeartBeat()
+		testTimeout = setTimeout( function () {
+			testTimedout( runInfo );
+		}, SWARM.conf.client.runTimeout * 1000 );
+	}
+	
+	window.TestSwarm.runnerHeartbeat = function () {
+		log('run.js: window.TestSwarm.runnerHeartbeat');
+		cancelTimeout();
+		setTestTimeout( window.TestSwarm.runnerRunInfo );
+	}
+	
 	function testTimedout( runInfo ) {
 		log('run.js: testTimedout(): hello');
 		cancelTest();
@@ -212,9 +229,7 @@
 				$( '#iframes' ).append( iframe );
 
 				// Timeout after a period of time
-				testTimeout = setTimeout( function () {
-					testTimedout( runInfo );
-				}, SWARM.conf.client.runTimeout * 1000 );
+				setTestTimeout( runInfo );
 
 				return;
 			}
