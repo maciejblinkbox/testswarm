@@ -83,7 +83,7 @@ class GetrunAction extends Action {
 				$isInserted = $db->query(str_queryf(
 					'INSERT INTO runresults
 					(run_id, client_id, status, store_token, updated, created, expected_update)
-					VALUES(%u, %u, 1, %s, %s, %s, %u);',
+					VALUES(%u, %u, 1, %s, %s, %s, %s);',
 					$runID,
 					$clientID,
 					sha1( $storeToken ),

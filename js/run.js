@@ -205,7 +205,7 @@
 
 	function timeoutCheck( runInfo ) {
 		// if test really timed out? check database
-		retrySend( { action: 'runner', run_id: currRunId, type: 'timeoutCheck' }, function () {
+		retrySend( { action: 'runner', resultsId: runInfo.resultsId, type: 'timeoutCheck' }, function () {
 			log('run.js: timeoutCheck(): retry');
 			timeoutCheck( runInfo );
 		}, function ( data ) {

@@ -10,17 +10,17 @@
 class RunnerAction extends Action {
 
 	/**
-	 * @actionMethod GET: Required.
-	 * @actionParam int run_id
+	 * @actionMethod GET/POST: Required.
+	 * @actionParam int resultsId
 	 * @actionParam string type: one of 'specStart', 'timeoutCheck'
 	 */
 	public function doAction() {
 		$request = $this->getContext()->getRequest();
 		
-		$runID = $request->getInt( "run_id" );
+		$resultsId = $request->getInt( "resultsId" );
 		$type = $request->getVal( "type" );
 
-		if ( !$runID || !$type ) {
+		if ( !$resultsId || !$type ) {
 			$this->setError( "missing-parameters" );
 			return;
 		}
@@ -60,14 +60,14 @@ class RunnerAction extends Action {
 						total = %u,
 						expected_update = %s,
 						updated = %s
-					WHERE run_id = %u
+					WHERE id = %u
 					AND status = 1;",
 					$fail,
 					$error,
 					$total,
 					swarmdb_dateformat( $expected_update ),
 					swarmdb_dateformat( $now ),
-					$runID
+					$resultsId
 				));
 				
 				$result = "ok";
@@ -86,9 +86,9 @@ class RunnerAction extends Action {
 				$isTimedout = (bool) $db->getOne(str_queryf(
 					"SELECT IF(expected_update IS NULL, false, expected_update < %u)
 					FROM runresults
-					WHERE run_id = %u;",
+					WHERE id = %u;",
 					swarmdb_dateformat( $timestamp ),
-					$runID
+					$resultsId
 				));
 				
 				$result = array(
