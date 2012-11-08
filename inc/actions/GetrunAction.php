@@ -78,6 +78,7 @@ class GetrunAction extends Action {
 				// Create stub runresults entry
 				$storeToken = sha1( mt_rand() );
 				$timeoutMargin = 10;	// 10 seconds margin
+				$now = time();
 				$expected_update = $now + $timeoutMargin;
 				$isInserted = $db->query(str_queryf(
 					'INSERT INTO runresults
