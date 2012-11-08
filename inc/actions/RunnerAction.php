@@ -61,15 +61,13 @@ class RunnerAction extends Action {
 						expected_update = %s,
 						updated = %s
 					WHERE run_id = %u
-					AND status = 1
-					AND ( expected_update IS NULL OR expected_update < %u );",
+					AND status = 1;",
 					$fail,
 					$error,
 					$total,
 					swarmdb_dateformat( $expected_update ),
 					swarmdb_dateformat( $now ),
-					$runID,
-					swarmdb_dateformat( $expected_update )
+					$runID
 				));
 				
 				$result = "ok";
@@ -82,11 +80,11 @@ class RunnerAction extends Action {
 				}
 				
 				$timeoutMargin = 10;	// 10 seconds margin
-				$timestamp = $now + $timeoutMargin;
+				$timestamp = $now - $timeoutMargin;
 				
 				// Check if run is timedout. Null expected_update stands for not timedout.
 				$isTimedout = (bool) $db->getOne(str_queryf(
-					"SELECT IF(expected_update IS NULL, false, expected_update > %u)
+					"SELECT IF(expected_update IS NULL, false, expected_update < %u)
 					FROM runresults
 					WHERE run_id = %u;",
 					swarmdb_dateformat( $timestamp ),
