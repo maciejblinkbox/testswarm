@@ -177,8 +177,10 @@
 			}
 		});
 	}
-
+	
 	function getTests() {
+		hideTimeoutTimer();
+	
 		if ( currRunId === undefined ) {
 			log( 'Connected to the swarm.' );
 		}
@@ -254,10 +256,31 @@
 	}
 	
 	function setupTestTimeout( runInfo ) {
+		timeoutCheckCountdown( runInfo, SWARM.conf.client.runTimeout );
+	}
+
+	function hideTimeoutTimer() {
+		$( '#timeoutTimer' ).hide();
+	}
+	
+	function logTimeoutCountdown(secondsLeft) {
+		$( '#timeoutCountdown' ).html( secondsLeft );
+		$( '#timeoutTimer' ).show();
+	}
+	
+	function timeoutCheckCountdown( runInfo, secondsLeft ) {
+		logTimeoutCountdown( secondsLeft );
+		
+		if ( secondsLeft === 0 ) {
+			timeoutCheck( runInfo );
+			return;
+		}
+		
 		// Timeout after a period of time
 		testTimeout = setTimeout( function () {
-			timeoutCheck( runInfo );
-		}, SWARM.conf.client.runTimeout * 1000 );
+			secondsLeft--;
+			timeoutCheckCountdown( runInfo, secondsLeft );
+		}, 1000 );
 	}
 	
 	/**

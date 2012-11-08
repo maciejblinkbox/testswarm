@@ -82,6 +82,7 @@ class RunPage extends Page {
 			. '</div>'
 			. '<div id="iframes"></div>'
 			. '<div class="well">'
+				. '<div id="timeoutTimer">Timeout check in <strong><span id="timeoutCountdown"></span></strong>s</div>'
 				. '<h3>History</h3>'
 				. '<ul id="history"></ul>'
 			. '</div>';
