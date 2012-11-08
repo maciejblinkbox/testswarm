@@ -35,7 +35,7 @@ class RunnerAction extends Action {
 		$result = "";
 		
 		switch( $type ) {
-			case "specStart":
+			case "stepStart":
 				if ( !$request->wasGetted() ) {
 					$this->setError( "requires-get" );
 					return;
