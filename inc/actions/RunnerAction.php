@@ -32,6 +32,7 @@ class RunnerAction extends Action {
 		
 		$now = time();		
 		$db = $this->getContext()->getDB();
+		$conf = $this->getContext()->getConf();
 		$result = "";
 		
 		switch( $type ) {
@@ -79,8 +80,7 @@ class RunnerAction extends Action {
 					return;
 				}
 
-				$timeoutMargin = 10;	// 10 seconds margin
-				$timestamp = $now - $timeoutMargin;
+				$timestamp = $now - $conf->client->expectedUpdateTimeoutMargin;
 
 				$expected_update = $db->getOne(str_queryf(
 					"SELECT expected_update
