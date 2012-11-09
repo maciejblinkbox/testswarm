@@ -25,7 +25,7 @@ class RunnerAction extends Action {
 			return;
 		}
 		
-		if ( !in_array( $type, array( "specStart", "timeoutCheck" ) ) ) {
+		if ( !in_array( $type, array( "stepStart", "timeoutCheck" ) ) ) {
 			$this->setError( "invalid-input" );
 			return;
 		}
@@ -78,19 +78,24 @@ class RunnerAction extends Action {
 					$this->setError( "requires-post" );
 					return;
 				}
-				
+
 				$timeoutMargin = 10;	// 10 seconds margin
 				$timestamp = $now - $timeoutMargin;
-				
-				// Check if run is timedout. Null expected_update stands for not timedout.
-				$isTimedout = (bool) $db->getOne(str_queryf(
-					"SELECT IF(expected_update IS NULL, false, expected_update < %u)
+
+				$expected_update = $db->getOne(str_queryf(
+					"SELECT expected_update
 					FROM runresults
 					WHERE id = %u;",
-					swarmdb_dateformat( $timestamp ),
 					$resultsId
 				));
+
+				$isTimedout = true;
 				
+				if ( $expected_update !== null ) {
+					$expected_update = gmstrtotime( $expected_update );
+					$isTimedout = $expected_update < $timestamp;
+				}
+
 				$result = array(
 					"testTimedout" => $isTimedout ? 'true' : 'false'
 				);

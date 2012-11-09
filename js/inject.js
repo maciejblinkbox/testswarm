@@ -187,9 +187,10 @@
 		};
 	
 		params = extendParams( params );
+		params.resultsId = params.results_id;	// RunnerAction.php requires resultsId parameter rather than resultsId
 		var url = baseUrl + 'api.php?' + objectToQuerystring( params );
 				
-		log('spec Start ... ' + url);	
+		log('step Start ... ' + url);	
 		var img = new Image();
 		// TODO: use onLoad event
 		//img.onLoad = function () { };

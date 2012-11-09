@@ -312,3 +312,24 @@
 		}
 		return $result;
 	}
+
+	/*
+	 * Function logs message to file. Useful for debugging.
+	 * @since 09/11/2012
+	 *
+	 * @param $filename string: Path to the log.
+	 * @param $msg array|string: A string or an array of string. 
+	 */
+	function logToFile($filename, $msg = array())
+	{ 
+		// open file
+		$fd = fopen($filename, "a");
+		// write string
+		
+		$msg = (array)$msg;
+		
+		fwrite($fd, swarmdb_dateformat() . ": " . implode(', ',$msg) . "\n");
+		// close file
+		fclose($fd);
+	}
+  

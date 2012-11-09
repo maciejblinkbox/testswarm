@@ -117,9 +117,9 @@ class GetrunAction extends Action {
 				$runInfo = array(
 					"id" => $runID,
 					"url" => $row->run_url,
-					"desc" => $row->job_name . ' ' . $row->run_name,
-					'resultsId' => $runresultsId,
-					'resultsStoreToken' => $storeToken,
+					"desc" => $row->job_name . " " . $row->run_name,
+					"resultsId" => $runresultsId,
+					"resultsStoreToken" => $storeToken,
 				);
 			}
 		}
