@@ -1,7 +1,6 @@
 {
     "general": {
-        "timezone": "UTC",
-        "ciUsername": "hudson"
+        "timezone": "UTC"
     },
     "database": {
         "host": "localhost",
@@ -157,7 +156,7 @@
         ]
     },
     "debug": {
-        "showExceptionDetails": false,
+        "showExceptionDetails": true,
         "phpErrorReporting": false,
         "dbLogQueries": false
     }
