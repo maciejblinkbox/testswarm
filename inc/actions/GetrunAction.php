@@ -75,6 +75,7 @@ class GetrunAction extends Action {
 			$row = $db->getRow(str_queryf(
 				"SELECT
 					runs.url as run_url,
+					jobs.id as job_id,
 					jobs.name as job_name,
 					runs.name as run_name
 				FROM
@@ -131,6 +132,7 @@ class GetrunAction extends Action {
 					"id" => $runID,
 					"url" => $row->run_url,
 					"desc" => $row->job_name . ' ' . $row->run_name,
+					'jobId' => $row->job_id,
 					'resultsId' => $runresultsId,
 					'resultsStoreToken' => $storeToken
 				);

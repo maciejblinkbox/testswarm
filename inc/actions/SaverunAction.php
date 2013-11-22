@@ -39,12 +39,13 @@ class SaverunAction extends Action {
 			return;
 		}
 
+		$jobID = $request->getInt( 'job_id' );
 		$runID = $request->getInt( 'run_id' );
 		$clientID = $request->getInt( 'client_id' );
 		$resultsID = $request->getVal( 'results_id' );
 		$resultsStoreToken = $request->getVal( 'results_store_token' );
 
-		if ( !$runID || !$clientID || !$resultsID || !$resultsStoreToken ) {
+		if ( !$jobID || !$runID || !$clientID || !$resultsID || !$resultsStoreToken ) {
 			$this->setError( 'missing-parameters' );
 			return;
 		}
@@ -167,6 +168,17 @@ class SaverunAction extends Action {
 				$resultsID
 			));
 		}
+
+		$db->query(str_queryf(
+			'UPDATE
+				job_useragent
+			SET calculated_summary = NULL
+			WHERE job_id = %u
+				AND useragent_id = %s;',
+			$jobID,
+			$browserInfo->getSwarmUaID()
+		));
+
 
 		$this->setData( 'ok' );
 	}

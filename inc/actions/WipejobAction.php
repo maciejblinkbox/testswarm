@@ -50,6 +50,23 @@ class WipejobAction extends Action {
 			return;
 		}
 
+		if ( $wipeType === 'delete' ) {
+			$db->query(str_queryf(
+				'DELETE
+				FROM job_useragent
+				WHERE job_id = %u;',
+				$jobID
+			));
+		} else {
+			$db->query(str_queryf(
+				'UPDATE
+					job_useragent
+				SET calculated_summary = NULL
+				WHERE job_id = %u;',
+				$jobID
+			));
+		}
+
 		$runRows = $db->getRows(str_queryf(
 			'SELECT id
 			FROM runs
