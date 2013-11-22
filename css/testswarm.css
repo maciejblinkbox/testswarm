@@ -499,8 +499,12 @@ td.swarm-device-run-health {
 	background-size: contain;
 }
 
+.swarm-browser-playstation {
+    background-image: url(../img/browser-playstation.png);
+}
+
 .swarm-browser-chrome {
-	background-image: url(../img/browser-chrome.png);
+    background-image: url(../img/browser-chrome.png);
 }
 
 .swarm-browser-chromium {

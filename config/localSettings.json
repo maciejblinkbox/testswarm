@@ -12,6 +12,10 @@
 		"cacheDir": "$1/cache"
 	},
 	"userAgents": {
+		"PlayStation3": {
+			"browserFamily": "PlayStation",
+			"browserMajor": "3"
+		},
 		"Chrome31": {
 			"browserFamily": "Chrome",
 			"browserMajor": "31"
@@ -25,65 +29,65 @@
 			"browserMajor": "1",
 			"browserMinor": "9"
 		},
-    	"Samsung2011": {
+		"Samsung2011": {
 			"browserFamily": "Samsung",
 			"browserMajor": "2011"
 		},
-    	"Samsung2012": {
+		"Samsung2012": {
 			"browserFamily": "Samsung",
 			"browserMajor": "2012"
 		},
-    	"Samsung2013": {
+		"Samsung2013": {
 			"browserFamily": "Samsung",
 			"browserMajor": "2013"
 		},
-    	"LG2011": {
+		"LG2011": {
 			"browserFamily": "LG",
 			"browserMajor": "2011"
 		},
-    	"LG2012": {
+		"LG2012": {
 			"browserFamily": "LG",
 			"browserMajor": "2012"
 		},
-    	"LG2013": {
+		"LG2013": {
 			"browserFamily": "LG",
 			"browserMajor": "2013"
 		},
-    	"Philips2011": {
+		"Philips2011": {
 			"browserFamily": "Philips",
 			"browserMajor": "2011"
 		},
-    	"Philips2012": {
+		"Philips2012": {
 			"browserFamily": "Philips",
 			"browserMajor": "2012"
 		},
-    	"Philips2013": {
+		"Philips2013": {
 			"browserFamily": "Philips",
 			"browserMajor": "2013"
 		},
-    	"Toshiba2011": {
+		"Toshiba2011": {
 			"browserFamily": "Toshiba",
 			"browserMajor": "2011"
 		},
-    	"Toshiba2012": {
+		"Toshiba2012": {
 			"browserFamily": "Toshiba",
 			"browserMajor": "2012"
 		},
-    	"Toshiba2013": {
+		"Toshiba2013": {
 			"browserFamily": "Toshiba",
 			"browserMajor": "2013"
 		},
-    	"TechnikaAvtrex": {
+		"TechnikaAvtrex": {
 			"browserFamily": "Technika Avtrex"
 		},
-    	"TechnikaMStar": {
+		"TechnikaMStar": {
 			"browserFamily": "Technika MStar"
 		},
-    	"Panasonic2012": {
+		"Panasonic2012": {
 			"browserFamily": "Panasonic",
 			"browserMajor": "2012"
 		},
-    	"Panasonic2013": {
+		"Panasonic2013": {
 			"browserFamily": "Panasonic",
 			"browserMajor": "2013"
 		}
@@ -93,43 +97,46 @@
 			"Chrome31",
 			"PhantomJS1.9"
 		],
-    	"Chrome": [
+		"Chrome": [
 			"Chrome31"
 		],
-    	"PhantomJS": [
+		"PhantomJS": [
 			"PhantomJS1.9"
 		],
-    	"Target TV Devices": [
+		"Consoles": [
+			"PlayStation3"
+		],
+		"Target TV Devices": [
 			"Samsung2012",
 			"Samsung2013",
 			"LG2012",
 			"LG2013"
 		],
-    	"Samsung TV Devices": [
+		"Samsung TV Devices": [
 			"Samsung2011",
 			"Samsung2012",
 			"Samsung2013"
 		],
-    	"LG TV Devices": [
+		"LG TV Devices": [
 			"LG2011",
 			"LG2012",
 			"LG2013"
 		],
-    	"Philips TV Devices": [
+		"Philips TV Devices": [
 			"Philips2011",
 			"Philips2012",
 			"Philips2013"
 		],
-    	"Panasonic TV Devices": [
+		"Panasonic TV Devices": [
 			"Panasonic2012",
 			"Panasonic2013"
 		],
-    	"Toshiba TV Devices": [
+		"Toshiba TV Devices": [
 			"Toshiba2011",
 			"Toshiba2012",
 			"Toshiba2013"
 		],
-    	"Technika TV Devices": [
+		"Technika TV Devices": [
 			"TechnikaAvtrex",
 			"TechnikaMStar"
 		]

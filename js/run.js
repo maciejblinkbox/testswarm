@@ -7,7 +7,7 @@
  * @package TestSwarm
  */
 (function ( $, SWARM, undefined ) {
-	var currRunId, currRunUrl, timeoutHeartbeatInterval, timeoutHeartbeatInProgress, confUpdateTimeout, pauseTimer, isCurrRunDone, sleepTimer, cmds, errorOut;
+	var currRunId, currRunUrl, timeoutHeartbeatInterval, timeoutHeartbeatInProgress, confUpdateTimeout, pauseTimer, isCurrRunDone, sleepTimer, cmds, errorOut, PS3ChunkSize = 32768, isPS3 = /PlayStation 3/i.test(navigator.userAgent);
 
 	var refreshCodes = [
 		13, 	// Enter/OK on most devices
@@ -15,7 +15,7 @@
 	];
 
 	function msg( htmlMsg ) {
-		$( '#msg' ).html( htmlMsg );
+		$( '#msg' ).text( htmlMsg );
 	}
 
 	function log( htmlMsg ) {
@@ -98,6 +98,74 @@
 				errMsg = errMsg ? (' (' + errMsg + ')') : '';
 				msg( 'Error connecting to server' + errMsg + ', retrying...' );
 				setTimeout( retry, SWARM.conf.client.saveRetrySleep * 1000 );
+			}
+		}
+
+		function submitChunkedRequest( query ) {
+			// PS3 needs to have the form submission chunked as too big requests ( >64kb ) are truncated
+
+			function splitData( data, chunkSize ) {
+				var regex = new RegExp('.{1,' + chunkSize + '}', 'g');
+				return data.match(regex);
+			}
+
+			// encode data to base64
+			var encodedData = Base64.encode( query );
+			// split data into 32 kb chunks
+			var chunks = splitData( encodedData, PS3ChunkSize );
+
+			// Initalize submission
+			function chunkSuccessResponse(chunkResponseData, textStatus, jqXHR)
+			{
+				// callback on last chunk submission contains server response.
+				if( chunkResponseData !== '' ) {
+					var jsonData = jQuery.parseJSON(chunkResponseData);
+					if ( jsonData.error ) {
+						log( 'run.js: retrySend: chunked request: PS3MultipartRequest.php: success: incorrect data' );
+						error( jsonData.error.info );
+					} else {
+						log( 'run.js: retrySend: chunked request: PS3MultipartRequest.php: success' );
+						errorOut = 0;
+						ok.apply( this, jsonData );
+					}
+				}
+			}
+
+			function submitChunks()
+			{
+				log( 'run.js: retrySend: chunked request: PS3MultipartRequestInit.php: success' );
+				for(var i = 0; i < chunks.length; i++) {
+					var chunk = chunks[i];
+					var chunkRequestData = { runId: currRunId, chunkNumber: i, totalChunks: chunks.length, data: chunk};
+					$.ajax({
+						type: 'POST',
+						url: SWARM.conf.web.contextpath + 'PS3MultipartRequest.php',
+						timeout: SWARM.conf.client.saveReqTimeout * 1000,
+						cache: false,
+						data: chunkRequestData,
+						success: chunkSuccessResponse,
+						error: error
+					});
+				}
+			}
+
+			var initializationData = { totalChunks: chunks.length, runId: currRunId };
+			$.ajax({
+				type: 'POST',
+				url: SWARM.conf.web.contextpath + 'PS3MultipartRequestInit.php',
+				timeout: SWARM.conf.client.saveReqTimeout * 1000,
+				cache: false,
+				data: initializationData,
+				success: submitChunks,
+				error: error
+			});
+		}
+
+		if( isPS3 && ( typeof query === "string" || typeof query === "object" ) ) {
+			var queryString = typeof query === "object" ? JSON.stringify( query ) : query;
+			if ( queryString.length > PS3ChunkSize ) {
+				submitChunkedRequest( queryString );
+				return;
 			}
 		}
 
