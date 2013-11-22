@@ -53,6 +53,19 @@ class CleanupAction extends Action {
 					$resultsID
 				));
 
+				$db->query(str_queryf(
+					'UPDATE
+						job_useragent,
+						runs,
+						run_useragent
+					SET calculated_summary = NULL
+					WHERE job_useragent.job_id = runs.job_id
+						AND job_useragent.useragent_id = run_useragent.useragent_id
+						AND run_useragent.run_id = runs.id
+						AND run_useragent.results_id = %u;',
+					$resultsID
+				));
+
 				if ( $ret ) {
 					$ret = $db->query(str_queryf(
 						'UPDATE
@@ -77,17 +90,46 @@ class CleanupAction extends Action {
 		// Suspend user agent runs which have not updated within the auto-suspend threshold.
 		$maxAutoSuspendedAge = time() - $conf->general->autoSuspendAfterTime;
 
-		$db->query(str_queryf(
-			"UPDATE run_useragent
-			SET	status = %u,
-				results_id = NULL
-			WHERE run_useragent.status = 0
+		$autoSuspendRows = $db->getRows(str_queryf(
+			"SELECT
+				run_useragent.id as run_useragent_id,
+				job_id,
+				useragent_id
+			FROM
+				run_useragent,
+				runs
+			WHERE run_useragent.run_id = runs.id
+				AND run_useragent.status = 0
 				AND run_useragent.updated < %s;",
-			JobAction::$STATE_SUSPENDED,
 			swarmdb_dateformat( $maxAutoSuspendedAge )
 		));
 
-		$numAutoSuspendedRunRows = $db->getAffectedRows();
+		$numAutoSuspendedRunRows = 0;
+
+		if ( $autoSuspendRows ) {
+			$numAutoSuspendedRunRows = count($autoSuspendRows);
+
+			foreach( $autoSuspendRows as $autoSuspendRow ){
+				$db->query(str_queryf(
+					"UPDATE run_useragent
+					SET	status = %u,
+						results_id = NULL
+					WHERE id = %u;",
+					JobAction::$STATE_SUSPENDED,
+					$autoSuspendRow->run_useragent_id
+				));
+
+				$db->query(str_queryf(
+					'UPDATE
+						job_useragent
+					SET calculated_summary = NULL
+					WHERE job_id = %u
+						AND useragent_id = %s;',
+					$autoSuspendRow->job_id,
+					$autoSuspendRow->useragent_id
+				));
+			}
+		}
 
 		$this->setData(array(
 			"resetTimedoutRuns" => $resetTimedoutRuns,
