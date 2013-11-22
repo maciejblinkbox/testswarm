@@ -28,6 +28,7 @@ class RunPage extends Page {
 			}
 		}
 
+		$this->bodyScripts[] = swarmpath( "js/base64encoder.js" );
 		$this->bodyScripts[] = swarmpath( "js/run.js?" . time() );
 
 		$client = Client::newFromContext( $this->getContext(), $runToken );
