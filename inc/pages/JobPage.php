@@ -11,7 +11,16 @@
 class JobPage extends Page {
 
 	public function execute() {
-		$action = JobAction::newFromContext( $this->getContext() );
+		$context = $this->getContext();
+		$request = $context->getRequest();
+		$item = $request->getInt( 'item' );
+
+		$action = JobAction::newFromContext( $context->createDerivedRequestContext(
+			array(
+				'runs' => true,
+				'item' => $item,
+			)
+		) );
 		$action->doAction();
 
 		$this->setAction( $action );

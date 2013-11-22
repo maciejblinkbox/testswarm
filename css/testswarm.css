@@ -326,32 +326,18 @@ h2 + .row {
     border-bottom: 1px solid #dddddd;
 }
 
-.table .swarm-device-health {
+.table.swarm-device-health td {
     padding: 0;
 }
 
 span.swarm-device-run-health {
-    border: 1px solid #dddddd;
-    border-top: 0;
 	display: block;
-	float: left;
-    margin: 0 0 -1px -1px;
-}
-
-td.swarm-device-run-health {
-	min-width: 20%;
-}
-
-.swarm-device-run-health:last-child {
-	border-right: 1px solid #dddddd;
 }
 
 .swarm-device-run-client {
 	display: block;
-    margin: -1px;
 	padding: 0;
 	background: #ffffff;
-    border: 1px solid #dddddd;
 }
 
 .swarm-device-run-client-colour {
@@ -380,7 +366,7 @@ td.swarm-device-run-health {
 	background: none;
 	border: none;
 	margin: 0;
-	padding: 0;
+	padding: 0 5px;
 	min-height: 0;
 	-webkit-border-radius: 0;
 	   -moz-border-radius: 0;
@@ -391,10 +377,9 @@ td.swarm-device-run-health {
 }
 
 .swarm-device-run-health .well-swarm-icon .swarm-icon {
-	margin: 0;
-	margin: 2px;
-	width: 13px;
-	height: 28px;
+    margin: 3px 0 0 0;
+    width: 100%;
+	height: 30px;
 }
 
 .swarm-device-run-health .swarm-browsername {
@@ -403,6 +388,25 @@ td.swarm-device-run-health {
 
 .swarm-device-run-health .swarm-os::after {
 	display: none;
+}
+
+.swarm-device-history .device-details {
+    white-space: nowrap;
+}
+
+.swarm-device-history a.client-id-key {
+    display: block;
+    float: left;
+    margin: 0 1px 1px 0;
+    padding: 2px 4px;
+    border: 1px solid #e1e1e8;
+    background-color: #f7f7f9;
+    font-family: Monaco, Menlo, Consolas, "Courier New", monospace;
+    font-size: 12px;
+    -webkit-border-radius: 3px;
+       -moz-border-radius: 3px;
+            border-radius: 3px;
+
 }
 
 .swarm-item-actions {

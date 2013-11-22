@@ -52,6 +52,27 @@ class WipebrowserjobAction extends Action {
 			return;
 		}
 
+		if ( $wipeType === 'delete' ) {
+			$db->query(str_queryf(
+				'DELETE
+				FROM job_useragent
+				WHERE job_id = %u
+					AND useragent_id = %s;',
+				$jobID,
+				$useragentID
+			));
+		} else {
+			$db->query(str_queryf(
+				'UPDATE
+					job_useragent
+				SET calculated_summary = NULL
+				WHERE job_id = %u
+					AND useragent_id = %s;',
+				$jobID,
+				$useragentID
+			));
+		}
+
 		$runRows = $db->getRows(str_queryf(
 			'SELECT id
 			FROM runs

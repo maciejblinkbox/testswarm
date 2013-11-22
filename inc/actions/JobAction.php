@@ -20,6 +20,7 @@ class JobAction extends Action {
 		$request = $this->getContext()->getRequest();
 
 		$this->item = $request->getInt( 'item' );
+		$includeRuns = $request->getBool( 'runs' );
 		if ( !$this->item ) {
 			$this->setError( 'missing-parameters' );
 			return;
@@ -33,10 +34,11 @@ class JobAction extends Action {
 			return;
 		}
 
-		$processed = self::getRunRows( $this->getContext(), array("jobID" => $this->item) );
-
-		$this->runs = $processed['runs'];
-		$this->userAgents = $processed['userAgents'];
+		if ( $includeRuns ) {
+			$processed = self::getRunRows( $this->getContext(), array("jobID" => $this->item) );
+			$this->runs = $processed['runs'];
+			$this->userAgents = $this->getUaInfo($processed['userAgentIDs']);
+		}
 
 		$uaSummaries = $this->getUaSummaries();
 
@@ -54,16 +56,93 @@ class JobAction extends Action {
 	}
 
 	protected function getUaSummaries() {
-		$uaStatuses = array();
-		foreach ( $this->runs as $run ) {
-			foreach ( $run['uaRuns'] as $uaID => $uaRun ) {
-				$uaStatuses[$uaID][] = array('status' => $uaRun['runStatus']);
+		$db = $this->getContext()->getDB();
+
+		if ( empty($this->userAgents) ) {
+			$userAgentIds = array();
+
+			$userAgentRows = $db->getRows(str_queryf(
+				'SELECT DISTINCT(useragent_id)
+				FROM
+					run_useragent,
+					runs
+				WHERE run_useragent.run_id = runs.id
+					AND runs.job_id = %u',
+				$this->item
+			));
+
+			foreach ($userAgentRows as $userAgentRow ){
+				$userAgentIds[] = $userAgentRow->useragent_id;
+			}
+			$this->userAgents = $this->getUaInfo($userAgentIds);
+		}
+
+		$jobStatusRows = $db->getRows(str_queryf(
+			'SELECT
+				useragent_id,
+				calculated_summary
+			FROM
+				job_useragent
+			WHERE job_id = %u',
+			$this->item
+		));
+
+		$calculatedSummaries = array();
+
+		if( $jobStatusRows ) {
+			foreach ($jobStatusRows as $jobStatusRow ){
+				$uaID = $jobStatusRow->useragent_id;
+				$calculatedSummaries[$uaID] = unserialize($jobStatusRow->calculated_summary);
 			}
 		}
 
 		$uaSummaries = array();
-		foreach ( $uaStatuses as $uaID => $statuses ) {
-			$uaSummaries[$uaID] = self::getUaSummaryFromStatuses( $statuses );
+		$runs = $this->runs;
+
+		foreach( $this->userAgents as $uaID => $uaInfo ){
+
+			if ( !empty( $calculatedSummaries[$uaID] ) ) {
+				$uaSummaries[$uaID] = $calculatedSummaries[$uaID];
+				continue;
+			}
+
+			if ( empty($runs) ) {
+				$processed = self::getRunRows( $this->getContext(), array("jobID" => $this->item) );
+				$runs = $processed['runs'];
+			}
+
+			$uaStatuses = array();
+			foreach ( $runs as $run ) {
+				if ( isset($run['uaRuns'][$uaID]) ) {
+					$uaRun = $run['uaRuns'][$uaID];
+					$uaStatuses[$uaID][] = array('status' => $uaRun['runStatus']);
+				}
+			}
+
+			$uaSummaries[$uaID] = self::getUaSummaryFromStatuses( $uaStatuses[$uaID] );
+
+			if( isset($calculatedSummaries[$uaID]) ) {
+				$db->query(str_queryf(
+					'UPDATE
+						job_useragent
+					SET
+						calculated_summary = %s
+					WHERE job_id = %u
+					AND useragent_id = %s
+					LIMIT 1;',
+					serialize($uaSummaries[$uaID]),
+					$this->item,
+					$uaID
+				));
+			} else {
+				$db->query(str_queryf(
+					'INSERT INTO job_useragent (job_id, useragent_id, calculated_summary)
+					VALUES(%u, %s, %s);',
+					$this->item,
+					$uaID,
+					serialize($uaSummaries[$uaID])
+				));
+			}
 		}
 
 		return $uaSummaries;
@@ -235,6 +314,15 @@ class JobAction extends Action {
 			uksort( $run['uaRuns'], array( $context->getBrowserInfo(), 'sortUaId' ) );
 		}
 
+		return array(
+			'jobID' => $jobID,
+			'runs' => $runs,
+			'userAgentIDs' => $userAgentIDs
+		);
+	}
+
+	public static function getUaInfo($userAgentIDs){
+
 		// Get information for all encounted useragents
 		$browserIndex = BrowserInfo::getBrowserIndex();
 		$userAgents = array();
@@ -249,11 +337,7 @@ class JobAction extends Action {
 		}
 		uasort( $userAgents, 'BrowserInfo::sortUaData' );
 
-		return array(
-			'jobID' => $jobID,
-			'runs' => $runs,
-			'userAgents' => $userAgents,
-		);
+		return $userAgents;
 	}
 
 	public static function getUaSummaryFromStatuses( Array $statuses ) {
