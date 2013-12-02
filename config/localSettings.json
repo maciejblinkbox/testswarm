@@ -1,8 +1,8 @@
 {
 	"database": {
 		"host": "localhost",
-		"database": "testswarm_db",
-		"username": "testswarm_db",
+		"database": "testswarm",
+		"username": "testswarm",
 		"password": "1234$abcd"
 	},
 	"web": {
