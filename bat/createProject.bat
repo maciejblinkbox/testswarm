@@ -24,7 +24,8 @@ set /p password="Enter Password: " %=%
 
 echo.
 echo.
-C:\wamp\bin\php\php5.3.13\php.exe %~dp0\..\scripts\manageProject.php --create --id="%projectId%" --display-title="%displayTitle%" --priority="%priority%" --password="%password%"
+set PHP=c:\wamp\bin\php\php5.4.3\php.exe
+%PHP% %~dp0\..\scripts\manageProject.php --create --id="%projectId%" --display-title="%displayTitle%" --priority="%priority%" --password="%password%"
 echo.
 
 pause
