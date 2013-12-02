@@ -81,6 +81,9 @@ class ResultAction extends Action {
 				'id' => $jobID,
 				'url' => swarmpath( "job/$jobID", "fullurl" ),
 			);
+			
+			// get userAgents from userAgentIDs
+			$data['otherRuns']['userAgents'] = JobAction::getUaInfo($processed['userAgentIDs']);
 		}
 
 		$clientRow = $db->getRow(str_queryf(

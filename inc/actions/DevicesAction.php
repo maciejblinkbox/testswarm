@@ -107,92 +107,12 @@ class DevicesAction extends Action {
 		if ( $deviceRows ) {
 			foreach ( $deviceRows as $deviceRow ) {
 
-				// Run results
-				$results = array();
-				$rows = $db->getRows(str_queryf(
-					'SELECT
-						runresults.id,
-						runresults.run_id,
-						runresults.client_id,
-						runresults.status,
-						runresults.total,
-						runresults.fail,
-						runresults.error,
-						runresults.updated,
-						runresults.created,
-						clients.device_index,
-						clients.useragent,
-						clients.updated as clientUpdated,
-						clients.updated as clientCreated,
-						clients.updated >= %s AS clientActive
-					FROM runresults
-					INNER JOIN clients
-						ON clients.id = runresults.client_id
-					WHERE clients.device_id = %u
-						AND runresults.status <> 1
-					ORDER BY runresults.updated DESC
-					LIMIT %u;',
-					swarmdb_dateformat( Client::getMaxAge( $context ) ),
-					$deviceRow->id,
-					$resultsLimit
-				));
-				if ( $rows ) {
-					$deviceIndexToRowIndexMap = array();
-
-					foreach ( $rows as $row ) {
-
-						$contrastingColourIndex = $row->device_index % $numberOfContrastingColours;
-						$clientContrastingColour = $contrastingColours[$contrastingColourIndex];
-
-						if ( !isset($deviceIndexToRowIndexMap[$row->device_index]) )
-						{
-							$deviceIndexToRowIndexMap[$row->device_index] = count($deviceIndexToRowIndexMap);
-						}
-
-						$rowIndex = $deviceIndexToRowIndexMap[$row->device_index];
-
-						$status = JobAction::getRunresultsStatus( $row );
-						switch( $status) {
-							case "passed":
-								$health = "good";
-								break;
-
-							case "error":
-							case "failed":
-							$health = "ok";
-								break;
-
-							case "heartbeat":
-								$health = "bad";
-								break;
-
-							case "lost":
-								$health = "severe";
-								break;
-						}
-
-						$bi = BrowserInfo::newFromContext( $context, $row->useragent );
-
-						$result = array(
-							'health' => $health,
-							'clientContrastingColour' => $clientContrastingColour,
-							'contrastingColourIndex' => $contrastingColourIndex,
-							'rowIndex' => $rowIndex,
-							'clientId' => $row->client_id,
-							'uaData' => $bi->getUaData()
-						);
-
-						$results[] = $result;
-					}
-				}
-
 				$device = array(
 					'name' => $deviceRow->name,
 					'id' => $deviceRow->id,
 					'deviceType' => $deviceRow->device_type,
 					'useragentID' => $deviceRow->useragent_id,
 					'active' => $deviceRow->active,
-					'results' => $results,
 					'viewUrl' => swarmpath( "device/{$deviceRow->id}" ),
 				);
 				$this->addTimestampsTo( $device, $deviceRow->updated, 'updated' );

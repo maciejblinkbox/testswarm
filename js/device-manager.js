@@ -15,6 +15,7 @@
 	var deviceTypes = {
 		DEVICE_TYPE_TV: "TV",
 		DEVICE_TYPE_STB: "STB",
+		DEVICE_TYPE_CONSOLE: "Console",
 		DEVICE_TYPE_DESKTOP: "Desktop",
 		DEVICE_TYPE_UNKNOWN: "Unknown"
 	}
@@ -29,6 +30,9 @@
 		smarttv2: {
 			userAgentRegex: /Maple/i,
 			getDetails: function(){
+
+				var deferred = $.Deferred();
+
 				var webDeviceApi = window.webapis;
 
 				function getDeviceType() {
@@ -50,7 +54,9 @@
 					firmware_version: webDeviceApi.tv.info.getFirmware()
 				});
 
-				return deviceInfo;
+				deferred.resolve(deviceInfo);
+
+				return deferred.promise();
 			},
 			plugins: [
 				{
@@ -74,6 +80,8 @@
 		netcast: {
 			userAgentRegex: /LG.NetCast/i,
 			getDetails: function(){
+
+				var deferred = $.Deferred();
 
 				var device = $('#netcastInfo')[0];
 
@@ -101,7 +109,9 @@
 					device_version: device.version
 				});
 
-				return deviceInfo;
+				deferred.resolve(deviceInfo);
+
+				return deferred.promise();
 			},
 			plugins: [
 				{
@@ -114,6 +124,8 @@
 		philips: {
 			userAgentRegex: /Philips/i,
 			getDetails: function(){
+
+				var deferred = $.Deferred();
 
 				var drmAgent = $('#drmAgent')[0],
 					netTvMatch = window.navigator.appVersion.match(/NETTV\/(.*?) /),
@@ -138,7 +150,9 @@
 					nettv_version: netTvVersion
 				});
 
-				return deviceInfo;
+				deferred.resolve(deviceInfo);
+
+				return deferred.promise();
 			},
 			plugins: [
 				{
@@ -153,17 +167,23 @@
 			userAgentRegex: /Toshiba; DTV/i,
 			getDetails: function(){
 
+				var deferred = $.Deferred();
+
 				var deviceInfo = $.extend( defaultDetails, {
 					device_key: window.toshibaPlaces.systemInfo.serialNumber,
 					device_type: deviceTypes.DEVICE_TYPE_TV
 				});
 
-				return deviceInfo;
+				deferred.resolve(deviceInfo);
+
+				return deferred.promise();
 			}
 		},
 		panasonic: {
 			userAgentRegex: /viera/i,
 			getDetails: function(){
+
+				var deferred = $.Deferred();
 
 				var platformInfo = window.navigator.appVersion.match(/Viera\/(.*?) /),
 					model = "Panasonic " + platformInfo[0].trim(),
@@ -178,12 +198,16 @@
 					api_version: window.PanasonicDevice.apiVersion
 				});
 
-				return deviceInfo;
+				deferred.resolve(deviceInfo);
+
+				return deferred.promise();
 			}
 		},
 		technika_avtrex: {
 			userAgentRegex: /Technika Media Streamer/i,
 			getDetails: function(){
+
+				var deferred = $.Deferred();
 
 				var deviceInfo = $.extend( defaultDetails, {
 					device_key: window.BlinkBoxDevice.getSerialNumber(),
@@ -194,7 +218,55 @@
 					version: window.BlinkBoxDevice.getVersion()
 				});
 
-				return deviceInfo;
+				deferred.resolve(deviceInfo);
+
+				return deferred.promise();
+			}
+		},
+		playstation: {
+			userAgentRegex: /PlayStation/i,
+			getDetails: function(){
+
+				var deferred = $.Deferred();
+
+				var hwid,
+					appVersion,
+					platformInfo = window.navigator.appVersion.match(/PlayStation (\d+)/),
+					model = platformInfo[0].trim();
+
+				var deviceQueryDeferredHwid = $.Deferred(),
+					deviceQueryDeferredAppVersion = $.Deferred();
+
+				var deviceInfo = $.extend( defaultDetails, {
+					model: model,
+					device_type: deviceTypes.DEVICE_TYPE_CONSOLE
+				});
+
+				window.accessfunction = function (messageJSONString)
+				{
+					var messageInfo = JSON.parse(messageJSONString)
+
+					switch(messageInfo.command) {
+						case "hwid":
+							deviceInfo.device_key = messageInfo.hwid;
+							deviceQueryDeferredHwid.resolve();
+							break;
+
+						case "appversion":
+							deviceInfo.appversion = messageInfo.version;
+							deviceQueryDeferredAppVersion.resolve();
+							break;
+					}
+				};
+
+				window.external.user( '{"command":"hwid"}' );
+				window.external.user( '{"command":"appversion"}' );
+
+				$.when( deviceQueryDeferredHwid, deviceQueryDeferredAppVersion ).then(function(){
+					deferred.resolve(deviceInfo);
+				});
+
+				return deferred.promise();
 			}
 		},
 		// TODO: Gather Technika MStar device information.
@@ -202,16 +274,22 @@
 			userAgentRegex: /MStar/i,
 			getDetails: function(){
 
+				var deferred = $.Deferred();
+
 				var deviceInfo = $.extend( defaultDetails, {
 					device_key: window.systemInfo.serialNumber
 				});
 
-				return deviceInfo;
+				deferred.resolve(deviceInfo);
+
+				return deferred.promise();
 			}
 		},
 		chrome: {
 			userAgentRegex: /Chrome/i,
 			getDetails: function(){
+
+				var deferred = $.Deferred();
 
 				var browserVersion = window.navigator.appVersion.match(/Chrome\/(.*?) /)[1];
 
@@ -221,12 +299,16 @@
 					browser_version: browserVersion
 				});
 
-				return deviceInfo;
+				deferred.resolve(deviceInfo);
+
+				return deferred.promise();
 			}
 		},
 		phantomJS: {
 			userAgentRegex: /PhantomJS/i,
 			getDetails: function(){
+
+				var deferred = $.Deferred();
 
 				var browserVersion = window.navigator.appVersion.match(/PhantomJS\/(.*?) /)[1];
 
@@ -236,7 +318,9 @@
 					browser_version: browserVersion
 				});
 
-				return deviceInfo;
+				deferred.resolve(deviceInfo);
+
+				return deferred.promise();
 			}
 		}
 	};
@@ -302,7 +386,9 @@
 
 			if (dependencies.length > 0) {
 				require(dependencies, function() {
-					deferred.resolve(device.getDetails());
+					device.getDetails().then(function(deviceDetails){
+						deferred.resolve(deviceDetails);
+					});
 				}, function(err) {
 					deferred.reject({
 						error: true,
@@ -313,7 +399,10 @@
 			}
 		}
 
-		deferred.resolve(device.getDetails());
+		device.getDetails().then(function(deviceDetails){
+			deferred.resolve(deviceDetails);
+		});
+
 		return deferred.promise();
 	};
 

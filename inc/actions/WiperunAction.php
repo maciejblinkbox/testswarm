@@ -83,6 +83,16 @@ class WiperunAction extends Action {
 
 		$db->query(str_queryf(
 			'UPDATE
+				job_useragent
+			SET calculated_summary = NULL
+			WHERE job_id = %u
+				AND useragent_id = %s;',
+			$jobID,
+			$useragentID
+		));
+
+		$db->query(str_queryf(
+			'UPDATE
 				run_useragent
 			SET
 				status = 0,

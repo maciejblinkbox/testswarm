@@ -39,12 +39,13 @@ class SaverunAction extends Action {
 			return;
 		}
 
+		$jobID = $request->getInt( 'job_id' );
 		$runID = $request->getInt( 'run_id' );
 		$clientID = $request->getInt( 'client_id' );
 		$resultsID = $request->getVal( 'results_id' );
 		$resultsStoreToken = $request->getVal( 'results_store_token' );
 
-		if ( !$runID || !$clientID || !$resultsID || !$resultsStoreToken ) {
+		if ( !$jobID || !$runID || !$clientID || !$resultsID || !$resultsStoreToken ) {
 			$this->setError( 'missing-parameters' );
 			return;
 		}
@@ -85,30 +86,48 @@ class SaverunAction extends Action {
 			return;
 		}
 
-		$db->query(str_queryf(
-			'UPDATE
-				runresults
-			SET
-				status = %u,
-				total = %u,
-				fail = %u,
-				error = %u,
-				report_html = %s,
-				report_json = %s,
-				updated = %s
-			WHERE id = %u
-			LIMIT 1;',
-			$status,
-			$total,
-			$fail,
-			$error,
-			gzencode( $reportHtml ),
-			gzencode( $reportJson ),
-			swarmdb_dateformat( SWARM_NOW ),
+		if ( empty($reportHtml) ) {
+			$db->query(str_queryf(
+				'UPDATE
+					runresults
+				SET
+					status = %u,
+					updated = %s
+				WHERE id = %u
+				LIMIT 1;',
+				$status,
+				swarmdb_dateformat( SWARM_NOW ),
 
-			$resultsID
-		));
+				$resultsID
+			));		
+		}
+		else 
+		{
+			$db->query(str_queryf(
+				'UPDATE
+					runresults
+				SET
+					status = %u,
+					total = %u,
+					fail = %u,
+					error = %u,
+					report_html = %s,
+					report_json = %s,
+					updated = %s
+				WHERE id = %u
+				LIMIT 1;',
+				$status,
+				$total,
+				$fail,
+				$error,
+				gzencode( $reportHtml ),
+				gzencode( $reportJson ),
+				swarmdb_dateformat( SWARM_NOW ),
 
+				$resultsID
+			));
+		}
+		
 		if ( $db->getAffectedRows() !== 1 ) {
 			$this->setError( 'internal-error', 'Updating of results table failed.' );
 			return;
@@ -167,6 +186,17 @@ class SaverunAction extends Action {
 				$resultsID
 			));
 		}
+
+		$db->query(str_queryf(
+			'UPDATE
+				job_useragent
+			SET calculated_summary = NULL
+			WHERE job_id = %u
+				AND useragent_id = %s;',
+			$jobID,
+			$browserInfo->getSwarmUaID()
+		));
+
 
 		$this->setData( 'ok' );
 	}

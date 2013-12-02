@@ -7,24 +7,118 @@
  * @package TestSwarm
  */
 (function ( $, SWARM, undefined ) {
-	var currRunId, currRunUrl, timeoutHeartbeatInterval, timeoutHeartbeatInProgress, confUpdateTimeout, pauseTimer, isCurrRunDone, sleepTimer, cmds, errorOut;
+	var currRunId, currRunUrl, timeoutHeartbeatInterval, timeoutHeartbeatInProgress, confUpdateTimeout, pauseTimer, isCurrRunDone, sleepTimer, cmds, errorOut, PS3ChunkSize = 32768, isPS3 = /PlayStation 3/i.test(navigator.userAgent);
 
+	var health = {
+		threshold: 25,
+		readyForNextJob: function() { return health.score > health.threshold; },
+		calculate: function() { return Math.round( ( health.score / health.threshold ) * 100 ); },
+		label: function () { 
+			var max = 400;
+			var score = health.calculate();
+			
+			if(score >= max) {
+				return max + '(+)%';
+			}
+			
+			return score + '%';
+		},
+		score: 0,
+		element: $('<a/>').appendTo( $('<li/>').prependTo( $('ul.nav.pull-right') ) )
+	};
+	
+	// work out whether device is healthy or not
+	// params:
+	// - health - object that holds results and display element
+	// - setInterval - window.setInterval function
+	(function(health, setInterval) {
+	
+		var config = {
+			lastTick: null,
+			element: health.element,
+			progress: {
+				chars: ['-', '\\', '|', '/'],
+				pos: 0
+			},
+			intervalMs: 250,
+			average: {
+				value: 0,
+				data: [],
+				length: 10,
+				getAverage: function() {
+				
+					config.average.data.splice(0, config.average.data.length - config.average.length);
+					
+					var sum = 0;
+					for(var i = 0; i < config.average.data.length; i++) {
+						sum += config.average.data[i];
+					}
+					
+					return Math.round( sum / config.average.data.length );
+				}
+			}
+		};
+				
+		config.element.text('health label');
+		
+		setInterval(function() {
+			var newTick = (new Date()).getTime();
+			
+			config.progress.pos = (config.progress.pos == config.progress.chars.length - 1 ) ? 0 : ( config.progress.pos + 1 );
+			var msg = [ config.progress.chars[config.progress.pos] ];
+			
+			if(!!config.lastTick) {
+				var diff = newTick - config.lastTick;
+				
+				config.average.data.push(diff);
+				
+				msg.push('last=' + diff + 'ms');
+				
+				// calculate average time on last few interval ticks
+				config.average.value = config.average.getAverage();
+				
+				msg.push( 'avg=' + config.average.value + 'ms' );
+
+				// determine whether device is healthy. apply 5% margin.
+				var isNowHealthy = ( config.average.value <= config.intervalMs * 1.05 );
+				if (isNowHealthy) {
+					health.score++;
+				} else {
+					health.score = 0;
+				}
+				
+				msg.push( 'H=' + health.label() );
+			}
+
+			config.element.html( msg.join(' ') );
+			
+			config.lastTick = newTick;
+		}, config.intervalMs);
+	
+	}) (health, window.setInterval);
+	
 	var refreshCodes = [
 		13, 	// Enter/OK on most devices
 		29443	// Enter/OK for Samsung devices
 	];
 
 	function msg( htmlMsg ) {
-		$( '#msg' ).html( htmlMsg );
+		$( '#msg' ).text( htmlMsg );
 	}
 
-	function log( htmlMsg ) {
+	function log( htmlMsg, doNotShowMessage ) {
 		$( '#history' ).prepend( '<li><strong>' +
 			new Date().toString().replace( /^\w+ /, '' ).replace( /:[^:]+$/, '' ) +
 			':</strong> ' + htmlMsg + '</li>'
 		);
 
-		msg( htmlMsg );
+		// keep only 20 latest history entries
+		$( '#history li:gt(20)' ).remove();
+		
+		if( !doNotShowMessage )
+		{
+			msg( htmlMsg );
+		}
 	}
 
 	/**
@@ -101,8 +195,77 @@
 			}
 		}
 
+		function submitChunkedRequest( query ) {
+			// PS3 needs to have the form submission chunked as too big requests ( >64kb ) are truncated
+
+			function splitData( data, chunkSize ) {
+				var regex = new RegExp('.{1,' + chunkSize + '}', 'g');
+				return data.match(regex);
+			}
+
+			// encode data to base64
+			var encodedData = Base64.encode( query );
+			// split data into 32 kb chunks
+			var chunks = splitData( encodedData, PS3ChunkSize );
+
+			// Initalize submission
+			function chunkSuccessResponse(chunkResponseData, textStatus, jqXHR)
+			{
+				// callback on last chunk submission contains server response.
+				if( chunkResponseData !== '' ) {
+					var jsonData = jQuery.parseJSON(chunkResponseData);
+					if ( jsonData.error ) {
+						log( 'run.js: retrySend: chunked request: PS3MultipartRequest.php: success: incorrect data' );
+						error( jsonData.error.info );
+					} else {
+						log( 'run.js: retrySend: chunked request: PS3MultipartRequest.php: success' );
+						errorOut = 0;
+						ok.apply( this, jsonData );
+					}
+				}
+			}
+
+			function submitChunks()
+			{
+				log( 'run.js: retrySend: chunked request: PS3MultipartRequestInit.php: success' );
+				for(var i = 0; i < chunks.length; i++) {
+					var chunk = chunks[i];
+					var chunkRequestData = { runId: currRunId, chunkNumber: i, totalChunks: chunks.length, data: chunk};
+					$.ajax({
+						type: 'POST',
+						url: SWARM.conf.web.contextpath + 'PS3MultipartRequest.php',
+						timeout: SWARM.conf.client.saveReqTimeout * 1000,
+						cache: false,
+						data: chunkRequestData,
+						success: chunkSuccessResponse,
+						error: error
+					});
+				}
+			}
+
+			var initializationData = { totalChunks: chunks.length, runId: currRunId };
+			
+			$.ajax({
+				type: 'POST',
+				url: SWARM.conf.web.contextpath + 'PS3MultipartRequestInit.php',
+				timeout: SWARM.conf.client.saveReqTimeout * 1000,
+				cache: false,
+				data: initializationData,
+				success: submitChunks,
+				error: error
+			});
+		}
+
+		if( isPS3 && ( typeof query === "string" || typeof query === "object" ) ) {
+			var queryString = typeof query === "object" ? JSON.stringify( query ) : query;
+			if ( queryString.length > PS3ChunkSize ) {
+				submitChunkedRequest( queryString );
+				return;
+			}
+		}
+
 		// default results submission
-		$.ajax({
+		var params = {
 			type: 'POST',
 			url: SWARM.conf.web.contextpath + 'api.php',
 			timeout: SWARM.conf.client.saveReqTimeout * 1000,
@@ -121,7 +284,11 @@
 			error: function () {
 				error();
 			}
-		});
+		};
+		
+		log( JSON.stringify( params ), true );
+		
+		$.ajax(params);
 	}
 
 	function getTests() {
@@ -136,12 +303,23 @@
 		isCurrRunDone = false;
 		timeoutHeartbeatInProgress = false;
 
-		msg( 'Querying for tests to run...' );
-		retrySend( {
-			action: 'getrun',
-			client_id: SWARM.client_id,
-			run_token: SWARM.run_token
-		}, getTests, runTests );
+		function queryForTests() {		
+			msg( 'Querying for tests to run...' );
+			retrySend( {
+				action: 'getrun',
+				client_id: SWARM.client_id,
+				run_token: SWARM.run_token
+			}, getTests, runTests );
+		}
+		
+		(function healthCheck() {
+			if(!health.readyForNextJob()) {
+				msg( 'Device is not responsive enough, cooling down a bit...' );
+				setTimeout( healthCheck, 1000 );
+			} else {
+				queryForTests();
+			}
+		})();
 	}
 
 	function cancelTest() {
@@ -168,6 +346,8 @@
 		}, function ( data ) {
 			timeoutHeartbeatInProgress = false;
 
+			log( JSON.stringify(data), true);
+			
 			if ( data.runheartbeat.testTimedout === 'true' ) {
 				log('run.js: timeoutHeartbeatCheck(): true');
 				testTimedout( runInfo );
@@ -186,11 +366,12 @@
 		retrySend(
 			{
 				action: 'saverun',
-				fail: 0,
-				error: 0,
-				total: 0,
+				//fail: 0,
+				//error: 0,
+				//total: 0,
 				status: 5, // ResultAction::STATE_HEARTBEAT
-				report_html: 'Test Timed Out From Heartbeat.',
+				//report_html: 'Test Timed Out From Heartbeat.',
+				job_id: runInfo.jobId,
 				run_id: currRunId,
 				client_id: SWARM.client_id,
 				run_token: SWARM.run_token,
@@ -270,6 +451,7 @@
 						$.param({
 							status: 2, // ResultAction::STATE_FINISHED
 							run_id: currRunId,
+							job_id: runInfo.jobId,
 							client_id: SWARM.client_id,
 							run_token: SWARM.run_token,
 							results_id: runInfo.resultsId,
