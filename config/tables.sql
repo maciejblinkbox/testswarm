@@ -135,6 +135,28 @@ CREATE INDEX idx_jobs_project_created ON jobs (project_id, created);
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `job_useragent`
+--
+
+CREATE TABLE `job_useragent` (
+  `id` int unsigned NOT NULL PRIMARY KEY AUTO_INCREMENT,
+
+-- Key to jobs.id field.
+  `job_id` int unsigned NOT NULL default 0,
+
+-- Key to config.userAgents property.
+  `useragent_id` varchar(255) NOT NULL default '',
+
+  -- Job useragent status
+  `calculated_summary` blob NULL
+
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE UNIQUE INDEX idx_job_useragent_job_useragent ON job_useragent (job_id, useragent_id);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `runs`
 -- Insertions handled by the AddjobAction class.
 --
