@@ -7,8 +7,23 @@
  * @package TestSwarm
  */
 (function ( $, SWARM, undefined ) {
-	var currRunId, currRunUrl, timeoutHeartbeatInterval, timeoutHeartbeatInProgress, confUpdateTimeout, pauseTimer, isCurrRunDone, sleepTimer, cmds, errorOut, PS3ChunkSize = 32768, isPS3 = /PlayStation 3/i.test(navigator.userAgent);
+	var intervalTick, iframe, currRunId, currRunUrl, timeoutHeartbeatInterval, timeoutHeartbeatInProgress, confUpdateTimeout, pauseTimer, isCurrRunDone, sleepTimer, cmds, errorOut, PS3ChunkSize = 32768, isPS3 = /PlayStation 3/i.test(navigator.userAgent);
 
+	var intervalElement = $('<li/>');
+	intervalElement.text('interval timer');
+	
+	$('ul.nav.pull-right').append(intervalElement);
+	
+	window.setInterval(function() {
+		var newTick = (new Date()).getTime();
+		
+		if(!!intervalTick) {
+			intervalElement.text(newTick - intervalTick);
+		}
+		
+		intervalTick = newTick;
+	}, 1000);
+	
 	var refreshCodes = [
 		13, 	// Enter/OK on most devices
 		29443	// Enter/OK for Samsung devices
@@ -150,6 +165,7 @@
 			}
 
 			var initializationData = { totalChunks: chunks.length, runId: currRunId };
+			
 			$.ajax({
 				type: 'POST',
 				url: SWARM.conf.web.contextpath + 'PS3MultipartRequestInit.php',
@@ -170,7 +186,7 @@
 		}
 
 		// default results submission
-		$.ajax({
+		var params = {
 			type: 'POST',
 			url: SWARM.conf.web.contextpath + 'api.php',
 			timeout: SWARM.conf.client.saveReqTimeout * 1000,
@@ -189,7 +205,11 @@
 			error: function () {
 				error();
 			}
-		});
+		};
+		
+		log( JSON.stringify( params ) );
+		
+		$.ajax(params);
 	}
 
 	function getTests() {
@@ -236,6 +256,8 @@
 		}, function ( data ) {
 			timeoutHeartbeatInProgress = false;
 
+			log(JSON.stringify(data));
+			
 			if ( data.runheartbeat.testTimedout === 'true' ) {
 				log('run.js: timeoutHeartbeatCheck(): true');
 				testTimedout( runInfo );
@@ -254,11 +276,11 @@
 		retrySend(
 			{
 				action: 'saverun',
-				fail: 0,
-				error: 0,
-				total: 0,
+				//fail: 0,
+				//error: 0,
+				//total: 0,
 				status: 5, // ResultAction::STATE_HEARTBEAT
-				report_html: 'Test Timed Out From Heartbeat.',
+				//report_html: 'Test Timed Out From Heartbeat.',
 				job_id: runInfo.jobId,
 				run_id: currRunId,
 				client_id: SWARM.client_id,
@@ -303,7 +325,7 @@
 	 * @param data Object: Reponse from api.php?action=getrun
 	 */
 	function runTests( data ) {
-		var norun_msg, timeLeft, runInfo, params, iframe;
+		var norun_msg, timeLeft, runInfo, params;
 
 		if ( !$.isPlainObject( data ) || data.error ) {
 			// Handle session timeout, where server sends back "Username required."
@@ -325,7 +347,7 @@
 				currRunUrl = runInfo.url;
 
 				log( 'Running ' + ( runInfo.desc || '' ) + ' tests...' );
-
+				
 				iframe = document.createElement( 'iframe' );
 				iframe.width = 1000;
 				iframe.height = 600;
@@ -353,7 +375,6 @@
 
 				return;
 			}
-
 		}
 
 		// If we're still here then either there are no new tests to run, or this is a call
@@ -368,7 +389,7 @@
 		// If we just completed a run, do a cooldown before we fetch the next run (if there is one).
 		// If we just completed a cooldown a no runs where available, nonewruns_sleep instead.
 		timeLeft = currRunUrl ? SWARM.conf.client.cooldownSleep : SWARM.conf.client.nonewrunsSleep;
-
+		
 		pauseTimer = setTimeout(function leftTimer() {
 			msg(norun_msg + ' Getting more in ' + timeLeft + ' seconds.' );
 			if ( timeLeft >= 1 ) {
@@ -389,6 +410,7 @@
 	SWARM.runDone = function () {
 		isCurrRunDone = true;
 		cancelTest();
+		
 		runTests({ timeoutMsg: 'Cooling down.' });
 	};
 
