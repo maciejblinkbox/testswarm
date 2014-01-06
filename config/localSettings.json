@@ -13,8 +13,7 @@
 	},
 	"userAgents": {
 		"PlayStation3": {
-			"browserFamily": "PlayStation",
-			"browserMajor": "3"
+			"deviceFamily": "PlayStation 3"
 		},
 		"Chrome31": {
 			"browserFamily": "Chrome",
