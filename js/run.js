@@ -7,22 +7,82 @@
  * @package TestSwarm
  */
 (function ( $, SWARM, undefined ) {
-	var intervalTick, iframe, currRunId, currRunUrl, timeoutHeartbeatInterval, timeoutHeartbeatInProgress, confUpdateTimeout, pauseTimer, isCurrRunDone, sleepTimer, cmds, errorOut, PS3ChunkSize = 32768, isPS3 = /PlayStation 3/i.test(navigator.userAgent);
+	var iframe, currRunId, currRunUrl, timeoutHeartbeatInterval, timeoutHeartbeatInProgress, confUpdateTimeout, pauseTimer, isCurrRunDone, sleepTimer, cmds, errorOut, PS3ChunkSize = 32768, isPS3 = /PlayStation 3/i.test(navigator.userAgent);
 
-	var intervalElement = $('<li/>');
-	intervalElement.text('interval timer');
+	var interval = {
+		isHealthy: true,
+		element: $('<a/>').appendTo( $('<li/>').prependTo( $('ul.nav.pull-right') ) )
+	};
 	
-	$('ul.nav.pull-right').append(intervalElement);
+	// work out whether device is healthy or not
+	// params:
+	// - interval - object that holds results and display element
+	// - setInterval - window.setInterval function
+	(function(interval, setInterval) {
 	
-	window.setInterval(function() {
-		var newTick = (new Date()).getTime();
+		var config = {
+			lastTick: null,
+			element: interval.element,
+			progress: {
+				chars: ['-', '\\', '|', '/'],
+				pos: 0
+			},
+			intervalMs: 250,
+			average: {
+				value: 0,
+				data: [],
+				length: 10
+			},
+			arrows: {
+				up: '&#9650;',
+				down: '&#9660;',
+				almostEqual: '&#8776;'
+			}
+		};
+				
+		config.element.text('interval timer');
 		
-		if(!!intervalTick) {
-			intervalElement.text(newTick - intervalTick);
-		}
-		
-		intervalTick = newTick;
-	}, 1000);
+		setInterval(function() {
+			var newTick = (new Date()).getTime();
+			
+			config.progress.pos = (config.progress.pos == config.progress.chars.length - 1 ) ? 0 : ( config.progress.pos + 1 );
+			var msg = [ config.progress.chars[config.progress.pos] ];
+			
+			if(!!config.lastTick) {
+				var diff = newTick - config.lastTick;
+				
+				config.average.data.push(diff);
+				if(config.average.data.length > config.average.length) {
+					config.average.data.splice(0,1);
+				}
+				
+				msg.push('last=' + diff + 'ms');
+				
+				if(config.average.data.length == config.average.length) {
+					// calculate average time on last few interval ticks
+					var sum = 0;
+					for(var i = 0; i < config.average.data.length; i++) {
+						sum += config.average.data[i];
+					}
+					
+					config.average.value = Math.round( sum / config.average.data.length );
+					
+					msg.push( 'avg=' + config.average.value + 'ms' );
+
+					// determine whether device is healthy. apply 5% margin.
+					interval.isHealthy = ( config.average.value <= config.intervalMs * 1.05 );
+				}
+			}	
+			
+			// H for healthy, U for unhealthy
+			msg.push( interval.isHealthy ? 'H' : 'U' );
+
+			config.element.html( msg.join(' ') );
+			
+			config.lastTick = newTick;
+		}, config.intervalMs);
+	
+	}) (interval, window.setInterval);
 	
 	var refreshCodes = [
 		13, 	// Enter/OK on most devices
@@ -224,12 +284,23 @@
 		isCurrRunDone = false;
 		timeoutHeartbeatInProgress = false;
 
-		msg( 'Querying for tests to run...' );
-		retrySend( {
-			action: 'getrun',
-			client_id: SWARM.client_id,
-			run_token: SWARM.run_token
-		}, getTests, runTests );
+		function queryForTests() {		
+			msg( 'Querying for tests to run...' );
+			retrySend( {
+				action: 'getrun',
+				client_id: SWARM.client_id,
+				run_token: SWARM.run_token
+			}, getTests, runTests );
+		}
+		
+		setTimeout( function healthCheck() {
+			if(!interval.isHealthy) {
+				msg( 'Device is not responsive enough, cooling down a bit...' );
+				setTimeout( healthCheck, 1000 );
+			} else {
+				queryForTests();
+			}
+		}, 1000 );		
 	}
 
 	function cancelTest() {
