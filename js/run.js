@@ -93,13 +93,19 @@
 		$( '#msg' ).text( htmlMsg );
 	}
 
-	function log( htmlMsg ) {
+	function log( htmlMsg, doNotShowMessage ) {
 		$( '#history' ).prepend( '<li><strong>' +
 			new Date().toString().replace( /^\w+ /, '' ).replace( /:[^:]+$/, '' ) +
 			':</strong> ' + htmlMsg + '</li>'
 		);
 
-		msg( htmlMsg );
+		// keep only 20 latest history entries
+		$( '#history li:gt(20)' ).remove();
+		
+		if( !doNotShowMessage )
+		{
+			msg( htmlMsg );
+		}
 	}
 
 	/**
@@ -267,7 +273,7 @@
 			}
 		};
 		
-		log( JSON.stringify( params ) );
+		log( JSON.stringify( params ), true );
 		
 		$.ajax(params);
 	}
@@ -327,7 +333,7 @@
 		}, function ( data ) {
 			timeoutHeartbeatInProgress = false;
 
-			log(JSON.stringify(data));
+			log( JSON.stringify(data), true);
 			
 			if ( data.runheartbeat.testTimedout === 'true' ) {
 				log('run.js: timeoutHeartbeatCheck(): true');
