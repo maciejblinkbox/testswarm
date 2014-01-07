@@ -22,6 +22,8 @@
 	
 		var config = {
 			lastTick: null,
+			penaltyCountdown: 0,
+			pendingPenalty: false,
 			element: interval.element,
 			progress: {
 				chars: ['-', '\\', '|', '/'],
@@ -40,7 +42,7 @@
 			}
 		};
 				
-		config.element.text('interval timer');
+		config.element.text('health label');
 		
 		setInterval(function() {
 			var newTick = (new Date()).getTime();
@@ -70,7 +72,24 @@
 					msg.push( 'avg=' + config.average.value + 'ms' );
 
 					// determine whether device is healthy. apply 5% margin.
-					interval.isHealthy = ( config.average.value <= config.intervalMs * 1.05 );
+					var isNowHealthy = ( config.average.value <= config.intervalMs * 1.05 );
+					var wasDeviceHealthy = interval.isHealthy;
+					var isPenaltyInProgress = config.penaltyCountdown > 0;
+					if( !wasDeviceHealthy && isNowHealthy && !isPenaltyInProgress || !wasDeviceHealthy && !isNowHealthy && isPenaltyInProgress ) {
+						// device just became healthy again, apply penalty
+						config.penaltyCountdown = 26;
+					}	
+
+					if ( isPenaltyInProgress ) {
+						config.penaltyCountdown--;
+						
+						if( config.penaltyCountdown > 0 ) {
+							isNowHealthy = false;
+							msg.push( 'P(' + config.penaltyCountdown + ')' );
+						}
+					}
+					
+					interval.isHealthy = isNowHealthy;
 				}
 			}	
 			
