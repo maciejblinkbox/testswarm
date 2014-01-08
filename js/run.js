@@ -367,7 +367,6 @@ z/**
 			{
 				action: 'saverun',
 				status: 5, // ResultAction::STATE_HEARTBEAT
-				//report_html: 'Test Timed Out From Heartbeat.',
 				job_id: runInfo.jobId,
 				run_id: currRunId,
 				client_id: SWARM.client_id,
