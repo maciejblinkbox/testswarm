@@ -7,24 +7,35 @@
  * @package TestSwarm
  */
 (function ( $, SWARM, undefined ) {
-	var iframe, currRunId, currRunUrl, timeoutHeartbeatInterval, timeoutHeartbeatInProgress, confUpdateTimeout, pauseTimer, isCurrRunDone, sleepTimer, cmds, errorOut, PS3ChunkSize = 32768, isPS3 = /PlayStation 3/i.test(navigator.userAgent);
+	var currRunId, currRunUrl, timeoutHeartbeatInterval, timeoutHeartbeatInProgress, confUpdateTimeout, pauseTimer, isCurrRunDone, sleepTimer, cmds, errorOut, PS3ChunkSize = 32768, isPS3 = /PlayStation 3/i.test(navigator.userAgent);
 
-	var interval = {
-		isHealthy: true,
+	var health = {
+		threshold: 25,
+		readyForNextJob: function() { return health.score > health.threshold; },
+		calculate: function() { return Math.round( ( health.score / health.threshold ) * 100 ); },
+		label: function () { 
+			var max = 400;
+			var score = health.calculate();
+			
+			if(score >= max) {
+				return max + '(+)%';
+			}
+			
+			return score + '%';
+		},
+		score: 0,
 		element: $('<a/>').appendTo( $('<li/>').prependTo( $('ul.nav.pull-right') ) )
 	};
 	
 	// work out whether device is healthy or not
 	// params:
-	// - interval - object that holds results and display element
+	// - health - object that holds results and display element
 	// - setInterval - window.setInterval function
-	(function(interval, setInterval) {
+	(function(health, setInterval) {
 	
 		var config = {
 			lastTick: null,
-			penaltyCountdown: 0,
-			pendingPenalty: false,
-			element: interval.element,
+			element: health.element,
 			progress: {
 				chars: ['-', '\\', '|', '/'],
 				pos: 0
@@ -33,12 +44,18 @@
 			average: {
 				value: 0,
 				data: [],
-				length: 10
-			},
-			arrows: {
-				up: '&#9650;',
-				down: '&#9660;',
-				almostEqual: '&#8776;'
+				length: 10,
+				getAverage: function() {
+				
+					config.average.data.splice(0, config.average.data.length - config.average.length);
+					
+					var sum = 0;
+					for(var i = 0; i < config.average.data.length; i++) {
+						sum += config.average.data[i];
+					}
+					
+					return Math.round( sum / config.average.data.length );
+				}
 			}
 		};
 				
@@ -54,54 +71,31 @@
 				var diff = newTick - config.lastTick;
 				
 				config.average.data.push(diff);
-				if(config.average.data.length > config.average.length) {
-					config.average.data.splice(0,1);
-				}
 				
 				msg.push('last=' + diff + 'ms');
 				
-				if(config.average.data.length == config.average.length) {
-					// calculate average time on last few interval ticks
-					var sum = 0;
-					for(var i = 0; i < config.average.data.length; i++) {
-						sum += config.average.data[i];
-					}
-					
-					config.average.value = Math.round( sum / config.average.data.length );
-					
-					msg.push( 'avg=' + config.average.value + 'ms' );
+				// calculate average time on last few interval ticks
+				config.average.value = config.average.getAverage();
+				
+				msg.push( 'avg=' + config.average.value + 'ms' );
 
-					// determine whether device is healthy. apply 5% margin.
-					var isNowHealthy = ( config.average.value <= config.intervalMs * 1.05 );
-					var wasDeviceHealthy = interval.isHealthy;
-					var isPenaltyInProgress = config.penaltyCountdown > 0;
-					if( !wasDeviceHealthy && isNowHealthy && !isPenaltyInProgress || !wasDeviceHealthy && !isNowHealthy && isPenaltyInProgress ) {
-						// device just became healthy again, apply penalty
-						config.penaltyCountdown = 26;
-					}	
-
-					if ( isPenaltyInProgress ) {
-						config.penaltyCountdown--;
-						
-						if( config.penaltyCountdown > 0 ) {
-							isNowHealthy = false;
-							msg.push( 'P(' + config.penaltyCountdown + ')' );
-						}
-					}
-					
-					interval.isHealthy = isNowHealthy;
+				// determine whether device is healthy. apply 5% margin.
+				var isNowHealthy = ( config.average.value <= config.intervalMs * 1.05 );
+				if (isNowHealthy) {
+					health.score++;
+				} else {
+					health.score = 0;
 				}
-			}	
-			
-			// H for healthy, U for unhealthy
-			msg.push( interval.isHealthy ? 'H' : 'U' );
+				
+				msg.push( 'H=' + health.label() );
+			}
 
 			config.element.html( msg.join(' ') );
 			
 			config.lastTick = newTick;
 		}, config.intervalMs);
 	
-	}) (interval, window.setInterval);
+	}) (health, window.setInterval);
 	
 	var refreshCodes = [
 		13, 	// Enter/OK on most devices
@@ -318,14 +312,14 @@
 			}, getTests, runTests );
 		}
 		
-		setTimeout( function healthCheck() {
-			if(!interval.isHealthy) {
+		(function healthCheck() {
+			if(!health.readyForNextJob()) {
 				msg( 'Device is not responsive enough, cooling down a bit...' );
 				setTimeout( healthCheck, 1000 );
 			} else {
 				queryForTests();
 			}
-		}, 1000 );		
+		})();
 	}
 
 	function cancelTest() {
@@ -421,7 +415,7 @@
 	 * @param data Object: Reponse from api.php?action=getrun
 	 */
 	function runTests( data ) {
-		var norun_msg, timeLeft, runInfo, params;
+		var norun_msg, timeLeft, runInfo, params, iframe;
 
 		if ( !$.isPlainObject( data ) || data.error ) {
 			// Handle session timeout, where server sends back "Username required."
@@ -443,7 +437,7 @@
 				currRunUrl = runInfo.url;
 
 				log( 'Running ' + ( runInfo.desc || '' ) + ' tests...' );
-				
+
 				iframe = document.createElement( 'iframe' );
 				iframe.width = 1000;
 				iframe.height = 600;
@@ -471,6 +465,7 @@
 
 				return;
 			}
+
 		}
 
 		// If we're still here then either there are no new tests to run, or this is a call
@@ -485,7 +480,7 @@
 		// If we just completed a run, do a cooldown before we fetch the next run (if there is one).
 		// If we just completed a cooldown a no runs where available, nonewruns_sleep instead.
 		timeLeft = currRunUrl ? SWARM.conf.client.cooldownSleep : SWARM.conf.client.nonewrunsSleep;
-		
+
 		pauseTimer = setTimeout(function leftTimer() {
 			msg(norun_msg + ' Getting more in ' + timeLeft + ' seconds.' );
 			if ( timeLeft >= 1 ) {
@@ -506,7 +501,6 @@
 	SWARM.runDone = function () {
 		isCurrRunDone = true;
 		cancelTest();
-		
 		runTests({ timeoutMsg: 'Cooling down.' });
 	};
 
