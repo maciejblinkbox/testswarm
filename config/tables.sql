@@ -80,7 +80,7 @@ CREATE TABLE `clients` (
   `useragent_id` varchar(255) NOT NULL,
 
   -- Raw User-Agent string.
-  `useragent` tinytext NOT NULL,
+  `useragent` text NOT NULL,
 
   -- Raw IP string as extractred by WebRequest::getIP
   `ip` varbinary(40) NOT NULL default '',
@@ -171,7 +171,7 @@ CREATE TABLE `runs` (
   `name` varchar(255) binary NOT NULL default '',
 
   -- Run url
-  `url` tinytext NOT NULL,
+  `url` text NOT NULL,
 
   -- YYYYMMDDHHMMSS timestamp.
   `created` binary(14) NOT NULL
