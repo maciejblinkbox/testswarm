@@ -1,8 +1,8 @@
 {
 	"database": {
 		"host": "localhost",
-		"database": "testswarm",
-		"username": "testswarm",
+		"database": "testswarm_db",
+		"username": "testswarm_db",
 		"password": "1234$abcd"
 	},
 	"web": {
@@ -13,7 +13,8 @@
 	},
 	"userAgents": {
 		"PlayStation3": {
-			"deviceFamily": "PlayStation 3"
+			"browserFamily": "PlayStation",
+			"browserMajor": "3"
 		},
 		"Chrome31": {
 			"browserFamily": "Chrome",
