@@ -1,4 +1,4 @@
-/**
+z/**
  * JavaScript file for the "run" page in the browser.
  *
  * @author John Resig, 2008-2011
@@ -366,9 +366,6 @@
 		retrySend(
 			{
 				action: 'saverun',
-				//fail: 0,
-				//error: 0,
-				//total: 0,
 				status: 5, // ResultAction::STATE_HEARTBEAT
 				//report_html: 'Test Timed Out From Heartbeat.',
 				job_id: runInfo.jobId,
