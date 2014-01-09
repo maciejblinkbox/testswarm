@@ -149,7 +149,7 @@ HTML;
 				<input type="text" name="runNames[]" id="form-runNames1" maxlength="255">
 				<br>
 				<label for="form-runUrls1">Run URL:</label>
-				<input type="text" name="runUrls[]" placeholder="http://" class="input-xlarge"id="form-runUrls1">
+				<input type="text" name="runUrls[]" placeholder="http://" class="input-xlarge" id="form-runUrls1">
 			</fieldset>
 			<fieldset>
 				<legend>Run 2</legend>
@@ -158,7 +158,7 @@ HTML;
 				<input type="text" name="runNames[]" id="form-runNames2" maxlength="255">
 				<br>
 				<label for="form-runUrls2">Run URL:</label>
-				<input type="text" name="runUrls[]" placeholder="http://" class="input-xlarge"id="form-runUrls2">
+				<input type="text" name="runUrls[]" placeholder="http://" class="input-xlarge" id="form-runUrls2">
 			</fieldset>
 			<fieldset>
 				<legend>Run 3</legend>
@@ -167,7 +167,7 @@ HTML;
 				<input type="text" name="runNames[]" id="form-runNames3" maxlength="255">
 				<br>
 				<label for="form-runUrls3">Run URL:</label>
-				<input type="text" name="runUrls[]" placeholder="http://" class="input-xlarge"id="form-runUrls3">
+				<input type="text" name="runUrls[]" placeholder="http://" class="input-xlarge" id="form-runUrls3">
 			</fieldset>
 		</div>
 	</fieldset>

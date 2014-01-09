@@ -86,29 +86,47 @@ class SaverunAction extends Action {
 			return;
 		}
 
-		$db->query(str_queryf(
-			'UPDATE
-				runresults
-			SET
-				status = %u,
-				total = %u,
-				fail = %u,
-				error = %u,
-				report_html = %s,
-				report_json = %s,
-				updated = %s
-			WHERE id = %u
-			LIMIT 1;',
-			$status,
-			$total,
-			$fail,
-			$error,
-			gzencode( $reportHtml ),
-			gzencode( $reportJson ),
-			swarmdb_dateformat( SWARM_NOW ),
-
-			$resultsID
-		));
+		if ( empty($reportHtml) ) {
+			$db->query(str_queryf(
+				'UPDATE
+					runresults
+				SET
+					status = %u,
+					updated = %s
+				WHERE id = %u
+				LIMIT 1;',
+				$status,
+				swarmdb_dateformat( SWARM_NOW ),
+				
+				$resultsID
+			));    
+		}
+		else 
+		{
+			$db->query(str_queryf(
+				'UPDATE
+					runresults
+				SET
+					status = %u,
+					total = %u,
+					fail = %u,
+					error = %u,
+					report_html = %s,
+					report_json = %s,
+					updated = %s
+				WHERE id = %u
+				LIMIT 1;',
+				$status,
+				$total,
+				$fail,
+				$error,
+				gzencode( $reportHtml ),
+				gzencode( $reportJson ),
+				swarmdb_dateformat( SWARM_NOW ),
+				
+				$resultsID
+			));
+		}
 
 		if ( $db->getAffectedRows() !== 1 ) {
 			$this->setError( 'internal-error', 'Updating of results table failed.' );
