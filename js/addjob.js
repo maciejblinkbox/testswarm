@@ -10,7 +10,6 @@ jQuery(function ( $ ) {
 
 	$runsContainer = $('#runs-container');
 	$runFieldsetClean = $runsContainer.children('fieldset').eq(0).clone().detach();
-	cnt = $runsContainer.children('fieldset').length;
 
 	$addRunBtn = $('<button>')
 		.text('+ Run')
@@ -18,7 +17,7 @@ jQuery(function ( $ ) {
 		.click(function ( e ) {
 			e.preventDefault();
 
-			cnt += 1;
+			cnt = $runsContainer.children('fieldset').length + 1;
 
 			function fixNum( i, val ) {
 				return val.replace( '1', cnt );
@@ -40,4 +39,33 @@ jQuery(function ( $ ) {
 		.parent();
 
 	$runsContainer.append( $addRunBtn );
+	
+	$cloneRunBtn = $('<button>')
+		.text(' Clone last')
+		.addClass('btn')
+		.click(function ( e ) {
+			e.preventDefault();
+
+			var cnt = $runsContainer.children('fieldset').length;
+			var newCnt = cnt  1;
+
+			function fixNum( i, val ) {
+				return val.replace( cnt, newCnt );
+			}
+
+			var field = $runsContainer
+				.children('fieldset:last')
+				.clone()
+				.detach()
+				.find('[for*="'  cnt  '"]').attr('for', fixNum)
+				.end()
+				.find('[id*="'  cnt  '"]').attr('id', fixNum)
+				.end()
+				.find('legend').text(fixNum)
+				.end();
+
+			$addRunBtn.before(field);
+		});
+
+		$addRunBtn.append( $cloneRunBtn );
 });
